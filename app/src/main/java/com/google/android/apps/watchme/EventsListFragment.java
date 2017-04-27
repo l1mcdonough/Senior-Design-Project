@@ -14,9 +14,12 @@
 
 package com.google.android.apps.watchme;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.IntentSender;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -37,6 +40,7 @@ import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.plus.Plus;
 import com.google.android.gms.plus.PlusOneButton;
 import com.google.android.gms.plus.model.people.Person;
+import com.google.api.client.googleapis.util.Utils;
 
 import java.util.List;
 
@@ -49,6 +53,7 @@ public class EventsListFragment extends Fragment implements
         ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private static final String TAG = EventsListFragment.class.getName();
+    private static final int REQUEST_CODE_ASK_PERMISSIONS = 1001;
     private Callbacks mCallbacks;
     private ImageLoader mImageLoader;
     private GoogleApiClient mGoogleApiClient;
@@ -135,7 +140,34 @@ public class EventsListFragment extends Fragment implements
         }
 
         setProfileInfo();
-        mCallbacks.onConnected(Plus.AccountApi.getAccountName(mGoogleApiClient));
+
+        if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+
+            int hasWriteContactsPermission = getContext().checkSelfPermission(Manifest.permission.GET_ACCOUNTS);
+            if (hasWriteContactsPermission != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[] {Manifest.permission.GET_ACCOUNTS},
+                        REQUEST_CODE_ASK_PERMISSIONS);
+                return;
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_CODE_ASK_PERMISSIONS:
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // Permission Granted
+                    mCallbacks.onConnected(Plus.AccountApi.getAccountName(mGoogleApiClient));
+
+                } else {
+                    // Permission Denied
+
+                }
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
     }
 
     @Override
